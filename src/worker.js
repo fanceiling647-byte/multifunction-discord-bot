@@ -72,7 +72,6 @@ async function editOriginal(env, interaction, content, embeds) {
     {
       method: "PATCH",
       headers: {
-        Authorization: `Bot ${env.DISCORD_TOKEN}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
