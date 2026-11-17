@@ -2,6 +2,8 @@ require("dotenv").config();
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { handleButton } = require("./commands/management");
+
 const {
   Client,
   Collection,
@@ -49,6 +51,18 @@ client.once(Events.ClientReady, readyClient => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
+  try {
+    if (interaction.isButton()) {
+      await handleButton(interaction);
+      return;
+    }
+  } catch (error) {
+    console.error("Button interaction failed:", error);
+    const response = { content: "That button could not be processed. Check the bot permissions and configuration.", ephemeral: true };
+    if (interaction.deferred || interaction.replied) await interaction.followUp(response).catch(() => {});
+    else await interaction.reply(response).catch(() => {});
+    return;
+  }
   if (!interaction.isChatInputCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
