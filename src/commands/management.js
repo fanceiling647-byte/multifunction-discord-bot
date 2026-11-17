@@ -68,11 +68,21 @@ const commands = [
       .addStringOption(o => o.setName("description").setDescription("Embed description").setMaxLength(4000))
       .addStringOption(o => o.setName("color").setDescription("HEX color, e.g. 5865F2"))
       .addStringOption(o => o.setName("footer").setDescription("Footer text").setMaxLength(2048))
+      .addStringOption(o => o.setName("footer_icon").setDescription("Footer icon URL"))
+      .addStringOption(o => o.setName("author").setDescription("Author name").setMaxLength(256))
+      .addStringOption(o => o.setName("author_url").setDescription("Author hyperlink URL"))
       .addStringOption(o => o.setName("image_url").setDescription("Large image URL"))
       .addStringOption(o => o.setName("thumbnail_url").setDescription("Thumbnail image URL"))
-      .addStringOption(o => o.setName("field_name").setDescription("Optional field name").setMaxLength(256))
-      .addStringOption(o => o.setName("field_value").setDescription("Optional field value").setMaxLength(1024))
-      .addBooleanOption(o => o.setName("field_inline").setDescription("Display field inline"))
+      .addBooleanOption(o => o.setName("timestamp").setDescription("Add the current timestamp"))
+      .addStringOption(o => o.setName("field_name").setDescription("Field 1 name").setMaxLength(256))
+      .addStringOption(o => o.setName("field_value").setDescription("Field 1 value").setMaxLength(1024))
+      .addBooleanOption(o => o.setName("field_inline").setDescription("Display field 1 inline"))
+      .addStringOption(o => o.setName("field2_name").setDescription("Field 2 name").setMaxLength(256))
+      .addStringOption(o => o.setName("field2_value").setDescription("Field 2 value").setMaxLength(1024))
+      .addBooleanOption(o => o.setName("field2_inline").setDescription("Display field 2 inline"))
+      .addStringOption(o => o.setName("field3_name").setDescription("Field 3 name").setMaxLength(256))
+      .addStringOption(o => o.setName("field3_value").setDescription("Field 3 value").setMaxLength(1024))
+      .addBooleanOption(o => o.setName("field3_inline").setDescription("Display field 3 inline"))
       .addStringOption(o => o.setName("button1_label").setDescription("First link button label").setMaxLength(80))
       .addStringOption(o => o.setName("button1_url").setDescription("First link button URL"))
       .addStringOption(o => o.setName("button2_label").setDescription("Second link button label").setMaxLength(80))
@@ -80,13 +90,19 @@ const commands = [
     async execute(i) {
       const channel = getDestination(i);
       const embed = makeEmbed(txt(i, "title"), txt(i, "description"), txt(i, "color"));
-      if (txt(i, "footer")) embed.setFooter({ text: txt(i, "footer") });
+      if (txt(i, "footer")) embed.setFooter({ text: txt(i, "footer"), iconURL: txt(i, "footer_icon") || undefined });
+      if (txt(i, "author")) embed.setAuthor({ name: txt(i, "author"), url: txt(i, "author_url") || undefined });
+      else if (txt(i, "author_url")) throw new Error("Provide an author name when using author_url.");
       if (txt(i, "image_url")) embed.setImage(txt(i, "image_url"));
       if (txt(i, "thumbnail_url")) embed.setThumbnail(txt(i, "thumbnail_url"));
-      const fn = txt(i, "field_name"), fv = txt(i, "field_value");
-      if (fn || fv) {
-        if (!fn || !fv) throw new Error("Provide both field_name and field_value.");
-        embed.addFields({ name: fn, value: fv, inline: i.options.getBoolean("field_inline") ?? false });
+      if (i.options.getBoolean("timestamp")) embed.setTimestamp();
+      for (let n = 1; n <= 3; n++) {
+        const suffix = n === 1 ? "" : String(n);
+        const fn = txt(i, "field" + suffix + "_name"), fv = txt(i, "field" + suffix + "_value");
+        if (fn || fv) {
+          if (!fn || !fv) throw new Error("Provide both name and value for embed field " + n + ".");
+          embed.addFields({ name: fn, value: fv, inline: i.options.getBoolean("field" + suffix + "_inline") ?? false });
+        }
       }
       const buttons = [];
       for (let n = 1; n <= 2; n++) {
