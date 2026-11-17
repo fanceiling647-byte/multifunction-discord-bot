@@ -163,7 +163,7 @@ for (const commandName of ["approveapplication", "denyapplication"]) {
       .addStringOption(o => o.setName("reason").setDescription("Reason for decision").setRequired(true).setMaxLength(1000))
       .addStringOption(o => o.setName("group_id").setDescription("Roblox group ID").setRequired(true).setMaxLength(30))
       .addStringOption(o => o.setName("roblox_username").setDescription("Applicant's Roblox username").setRequired(true).setMaxLength(20))
-      .addStringOption(o => o.setName("subdivision").setDescription("Optional; must match the selected division").addChoices(...subDivisions.map(v => ({ name: v, value: v }))),
+      .addStringOption(o => o.setName("subdivision").setDescription("Optional; must match the selected division").addChoices(...subDivisions.map(v => ({ name: v, value: v })))),
     async execute(i) {
       const d = getApplication(i);
       if (!/^\d{1,20}$/.test(d.groupId)) throw new Error("Group ID must contain only digits.");
