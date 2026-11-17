@@ -105,11 +105,12 @@ function avatarUrl(user, size = 1024) {
   const extension = user.avatar?.startsWith("a_") ? "gif" : "png";
   return user.avatar
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${extension}?size=${size}`
-    : `https://cdn.discordapp.com/embed/avatars/${Number(user.discriminator || 0) % 5}.png`;
+    : `https://cdn.discordapp.com/embed/avatars/${Number(BigInt(user.id) >> 22n) % 6}.png`;
 }
 
 function embed(title, description, fields = [], thumbnail, image) {
-  const value = { title, description, color: 0x5865F2, fields };
+  const value = { title, color: 0x5865F2, fields };
+  if (description) value.description = description;
   if (thumbnail) value.thumbnail = { url: thumbnail };
   if (image) value.image = { url: image };
   return [value];
@@ -123,7 +124,7 @@ async function runCommand(interaction, env) {
   const userId = options.user;
 
   if (name === "ping") {
-    return { content: `Pong! 🏓 Worker response: ${Date.now() - Number(interaction.id.slice(0, 0) || Date.now())}ms` };
+    return { content: "Pong! 🏓" };
   }
 
   if (name === "help") {
@@ -239,7 +240,7 @@ async function runCommand(interaction, env) {
       "SELECT COUNT(*) AS total FROM warnings WHERE guild_id = ? AND user_id = ?"
     ).bind(guildId, userId).first();
     const lines = (rows.results || []).reverse().map((row, index) =>
-      `**${Math.max(1, count.total - 10) + index + 1}.** ${row.reason} — <@!${row.moderator_id}>`
+      `**${Math.max(0, count.total - rows.results.length) + index + 1}.** ${row.reason} — <@!${row.moderator_id}>`
     );
     return { content: `Warnings for <@${userId}> (total: ${count.total})\n${lines.length ? lines.join("\n") : "No warnings recorded."}` };
   }
