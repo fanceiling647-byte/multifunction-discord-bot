@@ -2,8 +2,8 @@
   "name": "multifunction-discord-bot",
   "version": "1.1.0",
   "private": true,
-  "description": "A multifunction Discord bot running as a Cloudflare Worker using Discord HTTP interactions.",
-  "main": "src/worker.js",
+  "description": "A multifunction Discord bot running as a persistent discord.js Gateway client, with an optional Cloudflare HTTP interactions deployment.",
+  "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js",
