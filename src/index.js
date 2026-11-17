@@ -6,6 +6,7 @@ const {
   Client,
   Collection,
   Events,
+  ActivityType,
   GatewayIntentBits,
   Partials
 } = require("discord.js");
@@ -40,6 +41,11 @@ client.once(Events.ClientReady, readyClient => {
   console.log(`✅ Logged in as ${readyClient.user.tag}`);
   console.log(`📡 Connected to ${readyClient.guilds.cache.size} server(s)`);
   console.log(`🧩 Loaded ${client.commands.size} slash command(s)`);
+  readyClient.user.setPresence({
+    activities: [{ name: "Westhaven RP", type: ActivityType.Watching }],
+    status: "online"
+  });
+  console.log("👀 Presence set to Watching Westhaven RP");
 });
 
 client.on(Events.InteractionCreate, async interaction => {
