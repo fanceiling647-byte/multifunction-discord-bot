@@ -163,9 +163,11 @@ for (const commandName of ["approveapplication", "denyapplication"]) {
       .addStringOption(o => o.setName("reason").setDescription("Reason for decision").setRequired(true).setMaxLength(1000))
       .addStringOption(o => o.setName("group_id").setDescription("Roblox group ID").setRequired(true).setMaxLength(30))
       .addStringOption(o => o.setName("roblox_username").setDescription("Applicant's Roblox username").setRequired(true).setMaxLength(20))
+      .addChannelOption(o => o.setName("channel").setDescription("Channel where this decision embed will be posted").addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement).setRequired(true))
       .addStringOption(o => o.setName("subdivision").setDescription("Optional; must match the selected division").addChoices(...subDivisions.map(v => ({ name: v, value: v })))),
     async execute(i) {
       const d = getApplication(i);
+      const channel = getDestination(i);
       if (!/^\d{1,20}$/.test(d.groupId)) throw new Error("Group ID must contain only digits.");
       await i.deferReply({ ephemeral: true });
       const robloxUser = await resolveRobloxUser(d.robloxUsername);
@@ -180,8 +182,8 @@ for (const commandName of ["approveapplication", "denyapplication"]) {
         );
         payload.components = [row];
       }
-      await i.channel.send(payload);
-      await i.editReply((approved ? "Approved" : "Denied") + " application for " + d.discordUser + " (" + robloxUser.name + ").");
+      await channel.send(payload);
+      await i.editReply((approved ? "Approved" : "Denied") + " application for " + d.discordUser + " (" + robloxUser.name + ") in " + channel + ".");
     }
   });
 }
