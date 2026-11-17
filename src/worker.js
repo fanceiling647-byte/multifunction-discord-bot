@@ -267,7 +267,7 @@ async function runCommand(interaction, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/") {
@@ -315,6 +315,7 @@ export default {
 
     // Cloudflare keeps this short task alive after the initial interaction response.
     // waitUntil is attached through the execution context below.
+    ctx.waitUntil(task);
     return deferred;
   }
 };
