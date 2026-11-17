@@ -9,7 +9,7 @@
     "deploy": "node src/deploy-commands.js",
     "worker:dev": "wrangler dev",
     "worker:deploy": "wrangler deploy",
-    "check": "node --check src/worker.js && node --check src/deploy-commands.js && node --check src/commands/general.js && node --check src/commands/moderation.js"
+    "check": "node --check src/index.js && node --check src/deploy-commands.js && node --check src/commands/general.js && node --check src/commands/moderation.js && node --check src/commands/management.js && node --check src/lib/roblox.js && node --check src/worker.js"
   },
   "engines": {
     "node": ">=20.11.0"
