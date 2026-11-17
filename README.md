@@ -1,59 +1,56 @@
 # Multifunction Discord Bot
 
-A multifunction Discord bot deployed as a **Cloudflare Worker** using Discord's HTTP Interactions endpoint. It does not keep a permanent Discord Gateway connection, so it can run on the Cloudflare Workers Free plan within that plan's limits.
+A multifunction Discord bot built with Node.js and discord.js v14. The recommended mode is the **persistent Discord Gateway client**, which makes the bot show as online and supports a custom presence.
+
+## Run as an online bot (Windows / Node.js)
+
+1. Install Node.js 20 or newer from https://nodejs.org/.
+2. Download or clone this repository to your computer.
+3. Open a terminal in the repository folder and run:
+   `npm install`
+4. Copy `.env.example` to a file named `.env`.
+5. Fill in `DISCORD_TOKEN` and `CLIENT_ID` in `.env`. Never share or commit this file.
+6. In the Discord Developer Portal → your application → **General Information**, clear the **Interactions Endpoint URL** field and save. This makes Discord deliver slash-command interactions through the Gateway connection instead of the old Cloudflare HTTP endpoint.
+7. In the terminal, run:
+   `npm run deploy`
+8. Start the bot:
+   `npm start`
+
+When it connects, the bot logs in and sets its presence to **Watching Westhaven RP**. Keep the terminal window and computer running to keep it online. If the computer sleeps, shuts down, or loses internet, the bot goes offline.
 
 ## Commands
 
 ### General
-- `/ping` — Worker response time
-- `/help` — command list
-- `/serverinfo` — server details
-- `/userinfo [user]` — account and membership details
-- `/avatar [user]` — display an avatar
+- `/ping` — Check bot response
+- `/help` — Show the command list
+- `/serverinfo` — Show server details
+- `/userinfo [user]` — Show member information
+- `/avatar [user]` — Display an avatar
 
 ### Moderation
 - `/kick user [reason]`
 - `/ban user [reason]`
 - `/timeout user minutes [reason]`
-- `/warn user reason` — persistent D1 warning record
-- `/warnings user` — view recorded warnings
-- `/purge amount` — delete up to 100 recent messages
+- `/warn user reason`
+- `/warnings user`
+- `/purge amount`
 
 Moderation commands require the relevant moderator permissions. The bot itself must also have the required permissions and a role high enough to moderate the target.
 
-## Cloudflare deployment
+## Environment variables
 
-The repository is configured for the existing Worker name `federal-assistant-bot-one`.
+See `.env.example`:
+- `DISCORD_TOKEN` — bot token (secret)
+- `CLIENT_ID` — Discord application ID
+- `GUILD_ID` — optional test server ID for faster command updates
 
-1. In Cloudflare Workers & Pages, open **federal-assistant-bot-one**.
-2. If the project is connected to GitHub, set the deployment command to `npx wrangler deploy`. Do not configure it as a Pages static site and do not set a static output directory.
-3. Make sure the build/install step installs dependencies (for example, `npm install` or `bun install`). Wrangler reads `wrangler.jsonc` and deploys `src/worker.js`.
-4. In the Worker settings, add these three secrets (use **Settings → Variables and Secrets**):
-   - `DISCORD_TOKEN` — your bot token
-   - `DISCORD_PUBLIC_KEY` — the Public Key shown on your Discord Developer Portal application's **General Information** page
-   - `DISCORD_APPLICATION_ID` — your Discord Application ID
-5. Deploy the Worker. The Wrangler configuration declares a D1 database binding named `DB`; Cloudflare may provision the database when deploying this config.
-6. Apply the warning-table migration from the repository root using Wrangler:
-   `npx wrangler d1 migrations apply federal-assistant-bot-one-db --remote`
-7. In the Discord Developer Portal, open your application → **General Information** and set **Interactions Endpoint URL** to the Worker URL shown in the Cloudflare dashboard (the public `workers.dev` URL, not the dashboard URL). Discord will validate the endpoint.
-8. Register slash commands once from a trusted local computer:
-   - Install dependencies with `npm install`
-   - Copy `.env.example` to `.env`
-   - Set `DISCORD_TOKEN` and `CLIENT_ID` locally (the application ID)
-   - Run `npm run deploy`
-   - Never commit `.env` or paste the bot token into chat.
+If the bot token was ever exposed, reset it in the Discord Developer Portal before using it again.
 
-If the D1 database was not automatically created during deployment, create a D1 database named `federal-assistant-bot-one-db` in Cloudflare and add its database ID to the `d1_databases` entry in `wrangler.jsonc`, then redeploy and apply the migration.
+## Optional Cloudflare Worker mode
 
-## Important limitations
+The repository also retains `src/worker.js` and `wrangler.jsonc` for HTTP-interaction deployments. That mode can respond to slash commands but **does not maintain a Gateway connection or show the bot as online**. Do not set the Discord Interactions Endpoint URL to the Worker if you want to use the online Gateway mode above.
 
-This Worker uses Discord HTTP interactions, not the Gateway WebSocket client. Slash commands work when Discord sends an interaction to the endpoint. It does **not** receive arbitrary message events, member join/leave events, presence updates, or ordinary Gateway events. Features that depend on those events need a separate always-on Gateway host.
-
-Cloudflare Workers Free has usage and execution limits. It is not an unlimited VPS. Check Cloudflare's current [Workers pricing and limits](https://developers.cloudflare.com/workers/platform/pricing/) before adding high-volume features.
-
-## Local command registration
-
-The `src/deploy-commands.js` script uses discord.js command builders to register the commands with Discord. It is a one-time/admin task and is not run inside the Worker.
+Cloudflare Workers have platform limits and are not a general-purpose always-on Node.js host. See the [official limits](https://developers.cloudflare.com/workers/platform/limits/).
 
 ## Project layout
 
@@ -63,13 +60,11 @@ src/
     general.js
     moderation.js
   lib/
-    storage.js             # legacy JSON storage for the old Gateway version
-  worker.js                # Cloudflare HTTP interactions handler
-  index.js                 # legacy Node.js Gateway entry point
-  deploy-commands.js       # slash-command registration
+    storage.js
+  worker.js                # optional Cloudflare HTTP interactions handler
+  index.js                 # persistent discord.js Gateway entry point
+  deploy-commands.js       # one-time slash-command registration
 migrations/
-  0001_create_warnings.sql
+  0001_create_warnings.sql # used by optional Cloudflare D1 mode
 wrangler.jsonc
 ```
-
-Never commit bot tokens or other secrets. If a token was ever exposed, reset it in the Discord Developer Portal before deploying.
