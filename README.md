@@ -1,11 +1,11 @@
 # Multifunction Discord Bot
 
-A modular Discord bot built with **Node.js**, **discord.js v14**, and a small persistent JSON data store. Designed for deployment on Quaxly or another Node.js host.
+A multifunction Discord bot deployed as a **Cloudflare Worker** using Discord's HTTP Interactions endpoint. It does not keep a permanent Discord Gateway connection, so it can run on the Cloudflare Workers Free plan within that plan's limits.
 
-## Included commands
+## Commands
 
 ### General
-- `/ping` — bot/API latency
+- `/ping` — Worker response time
 - `/help` — command list
 - `/serverinfo` — server details
 - `/userinfo [user]` — account and membership details
@@ -15,68 +15,61 @@ A modular Discord bot built with **Node.js**, **discord.js v14**, and a small pe
 - `/kick user [reason]`
 - `/ban user [reason]`
 - `/timeout user minutes [reason]`
-- `/warn user reason` — recorded warning
+- `/warn user reason` — persistent D1 warning record
 - `/warnings user` — view recorded warnings
-- `/purge amount` — bulk-delete up to 100 recent messages
+- `/purge amount` — delete up to 100 recent messages
 
-Moderation commands have Discord default permission requirements and also check the bot's role hierarchy/API permissions.
+Moderation commands require the relevant moderator permissions. The bot itself must also have the required permissions and a role high enough to moderate the target.
 
-## Requirements
-- Node.js 20.11 or newer
-- A Discord application and bot
-- A host that supports persistent storage if you want warning data to survive redeployments
+## Cloudflare deployment
 
-## Discord application setup
-1. Create an application at https://discord.com/developers/applications.
-2. Open **Bot** and create/reset the bot token if necessary.
-3. Under **Bot → Privileged Gateway Intents**, enable **Server Members Intent** and **Message Content Intent** if you plan to add features that need them. This starter does not read ordinary message content, so Message Content can remain disabled until needed.
-4. Under **OAuth2 → URL Generator**, select scopes `bot` and `applications.commands`.
-5. Select only the permissions the bot needs: View Channels, Send Messages, Embed Links, Read Message History, Kick Members, Ban Members, Moderate Members, and Manage Messages.
-6. Invite the bot to your server.
+The repository is configured for the existing Worker name `federal-assistant-bot-one`.
 
-Never share your bot token. If it has been exposed, reset it in the Developer Portal immediately.
+1. In Cloudflare Workers & Pages, open **federal-assistant-bot-one**.
+2. If the project is connected to GitHub, set the deployment command to `npx wrangler deploy`. Do not configure it as a Pages static site and do not set a static output directory.
+3. Make sure the build/install step installs dependencies (for example, `npm install` or `bun install`). Wrangler reads `wrangler.jsonc` and deploys `src/worker.js`.
+4. In the Worker settings, add these three secrets (use **Settings → Variables and Secrets**):
+   - `DISCORD_TOKEN` — your bot token
+   - `DISCORD_PUBLIC_KEY` — the Public Key shown on your Discord Developer Portal application's **General Information** page
+   - `DISCORD_APPLICATION_ID` — your Discord Application ID
+5. Deploy the Worker. The Wrangler configuration declares a D1 database binding named `DB`; Cloudflare may provision the database when deploying this config.
+6. Apply the warning-table migration from the repository root using Wrangler:
+   `npx wrangler d1 migrations apply federal-assistant-bot-one-db --remote`
+7. In the Discord Developer Portal, open your application → **General Information** and set **Interactions Endpoint URL** to the Worker URL shown in the Cloudflare dashboard (the public `workers.dev` URL, not the dashboard URL). Discord will validate the endpoint.
+8. Register slash commands once from a trusted local computer:
+   - Install dependencies with `npm install`
+   - Copy `.env.example` to `.env`
+   - Set `DISCORD_TOKEN` and `CLIENT_ID` locally (the application ID)
+   - Run `npm run deploy`
+   - Never commit `.env` or paste the bot token into chat.
 
-## Run locally
-1. Install dependencies: `npm install`
-2. Copy `.env.example` to `.env`.
-3. Fill in `DISCORD_TOKEN`, `CLIENT_ID`, and optionally `GUILD_ID` in the local `.env`.
-4. Register commands: `npm run deploy`
-5. Start the bot: `npm start`
+If the D1 database was not automatically created during deployment, create a D1 database named `federal-assistant-bot-one-db` in Cloudflare and add its database ID to the `d1_databases` entry in `wrangler.jsonc`, then redeploy and apply the migration.
 
-When `GUILD_ID` is set, commands register to that test server and update quickly. Without it, commands register globally and may take time to appear.
+## Important limitations
 
-## Quaxly deployment
-1. Create a Node.js bot/service in your Quaxly dashboard.
-2. Connect this GitHub repository or upload the project.
-3. Set the install/build command to `npm install` (if the panel asks).
-4. Set the start command to `npm start`.
-5. Add environment variables in the host's secret/environment-variable settings:
-   - `DISCORD_TOKEN` — newly reset bot token
-   - `CLIENT_ID` — Discord application/bot ID
-   - `GUILD_ID` — optional test server ID
-6. Deploy/start the bot.
-7. Run `npm run deploy` once from the host console or locally with the same environment variables to register slash commands.
+This Worker uses Discord HTTP interactions, not the Gateway WebSocket client. Slash commands work when Discord sends an interaction to the endpoint. It does **not** receive arbitrary message events, member join/leave events, presence updates, or ordinary Gateway events. Features that depend on those events need a separate always-on Gateway host.
 
-Do not commit `.env`, tokens, or other secrets.
+Cloudflare Workers Free has usage and execution limits. It is not an unlimited VPS. Check Cloudflare's current [Workers pricing and limits](https://developers.cloudflare.com/workers/platform/pricing/) before adding high-volume features.
 
-## Data and backups
-Warnings are stored in `data/database.json`. The `data/` folder is intentionally ignored by Git because it may contain server data. Configure persistent storage on your host if available and periodically download a backup. If the host does not provide persistent storage, data may be lost on rebuild/redeploy.
+## Local command registration
+
+The `src/deploy-commands.js` script uses discord.js command builders to register the commands with Discord. It is a one-time/admin task and is not run inside the Worker.
 
 ## Project layout
+
 ```
 src/
   commands/
     general.js
     moderation.js
   lib/
-    storage.js
-  deploy-commands.js
-  index.js
-.env.example
-.gitignore
-package.json
-README.md
+    storage.js             # legacy JSON storage for the old Gateway version
+  worker.js                # Cloudflare HTTP interactions handler
+  index.js                 # legacy Node.js Gateway entry point
+  deploy-commands.js       # slash-command registration
+migrations/
+  0001_create_warnings.sql
+wrangler.jsonc
 ```
 
-## Development
-Add new feature modules under `src/commands/` and export an array of command objects. Each object should contain a discord.js SlashCommandBuilder as `data` and an async `execute(interaction)` function. The loader discovers command files automatically.
+Never commit bot tokens or other secrets. If a token was ever exposed, reset it in the Discord Developer Portal before deploying.
