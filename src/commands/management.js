@@ -159,11 +159,11 @@ for (const commandName of ["approveapplication", "denyapplication"]) {
       .setDescription(commandName === "approveapplication" ? "Approve a division application." : "Deny a division application.")
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
       .addStringOption(o => o.setName("division").setDescription("Division applied for").setRequired(true).addChoices(...divisions.map(v => ({ name: v, value: v }))))
-      .addStringOption(o => o.setName("subdivision").setDescription("Optional; must match the selected division").addChoices(...subDivisions.map(v => ({ name: v, value: v }))))
       .addUserOption(o => o.setName("user").setDescription("Discord applicant").setRequired(true))
       .addStringOption(o => o.setName("reason").setDescription("Reason for decision").setRequired(true).setMaxLength(1000))
       .addStringOption(o => o.setName("group_id").setDescription("Roblox group ID").setRequired(true).setMaxLength(30))
-      .addStringOption(o => o.setName("roblox_username").setDescription("Applicant's Roblox username").setRequired(true).setMaxLength(20)),
+      .addStringOption(o => o.setName("roblox_username").setDescription("Applicant's Roblox username").setRequired(true).setMaxLength(20))
+      .addStringOption(o => o.setName("subdivision").setDescription("Optional; must match the selected division").addChoices(...subDivisions.map(v => ({ name: v, value: v }))),
     async execute(i) {
       const d = getApplication(i);
       if (!/^\d{1,20}$/.test(d.groupId)) throw new Error("Group ID must contain only digits.");
