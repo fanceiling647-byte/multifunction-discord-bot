@@ -173,7 +173,13 @@ for (const commandName of ["approveapplication", "denyapplication"]) {
       const robloxUser = await resolveRobloxUser(d.robloxUsername);
       const approved = commandName === "approveapplication";
       const embed = applicationEmbed(d, approved, robloxUser.id, i.user.tag);
-      const payload = { embeds: [embed] };
+      // Put the applicant mention in message content: Discord does not generate
+      // actual mention notifications from text inside an embed.
+      const payload = {
+        content: `<@${d.discordUser.id}>`,
+        embeds: [embed],
+        allowedMentions: { users: [d.discordUser.id] }
+      };
       if (approved) {
         const groupUrl = "https://www.roblox.com/communities/" + d.groupId;
         const row = new ActionRowBuilder().addComponents(
